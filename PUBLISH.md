@@ -142,4 +142,4 @@ npm publish
 | `kit/termux-boot.apk` | 开机自启 | 自启按钮 404 |
 | `kit/setup.sh` 等 | 平板端装 dsh + 编译绑定 + 打补丁 | 平板端装不起来 |
 | `dsh-android-kit.tgz` | 上面这些脚本的打包（安装时下发） | 平板端装不起来 |
-| `install-windows.ps1` / `install-unix.sh` | 电脑端拷贝安装 | 只能用方式 A 装 |
+| `install-windows.ps1` / `install-unix.sh` | 保留给手工拷贝安装（README 已不再主推） | 不影响「添加插件」安装 |
