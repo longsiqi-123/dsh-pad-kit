@@ -80,7 +80,7 @@ fi
 
 say ""
 say "完成。还有两步是必须人工做的："
-say "  1) 重启 DSH（新增插件行不会热加载），重启后会出现 17 个 tablet_* 工具"
+say "  1) 重启 DSH（新增插件行不会热加载），重启后会出现 7 个 tablet_* 工具"
 say "  2) 首次装平板时，防火墙放行一次 TCP 8090"
 say ""
 say "下一步：在 DSH 里调用 tablet_install_page，按返回的地址在平板上操作。"

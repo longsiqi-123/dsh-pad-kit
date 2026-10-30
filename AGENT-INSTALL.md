@@ -95,7 +95,7 @@ node --input-type=module -e "const m = await import('file:///<dsh>/plugins/dsh-p
 
 ### 7. 告诉用户重启
 
-**新增插件行不会热加载**，必须重启 DSH。重启后工具列表里会出现 17 个 `tablet_*` 工具：
+**新增插件行不会热加载**，必须重启 DSH。重启后工具列表里会出现 7 个 `tablet_*` 工具：
 
 ```
 tablet_install_page  tablet_bootstrap   tablet_targets     tablet_kit_status

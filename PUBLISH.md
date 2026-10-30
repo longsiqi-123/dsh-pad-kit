@@ -114,7 +114,7 @@ npm publish
 | 只想走 GitHub | `github:longsiqi-123/dsh-pad-kit` |
 | 你直接发了 zip | zip 的绝对路径 |
 
-装完都要**重启一次 DSH**，`tablet_*` 的 17 个工具才会出现。
+装完都要**重启一次 DSH**，`tablet_*` 的 7 个工具才会出现。
 
 ---
 
@@ -136,7 +136,7 @@ npm publish
 |---|---|---|
 | `package.json` | DSH 靠它找入口与 patch | 装不上 |
 | `cordis.patch.yml` | 激活行（`id: pad-kit`） | 装上了但不生效 |
-| `lib/plugin.js` | 17 个工具 + 安装页 + bootstrap 渲染 | 装上没有工具 |
+| `lib/plugin.js` | 7 个工具 + 安装页 + bootstrap 渲染 | 装上没有工具 |
 | `kit/bootstrap.tmpl` | 平板端那一行命令的模板 | 安装页 500 |
 | `kit/termux.apk` | 给没装 Termux 的平板 | 「下载 Termux」按钮 404 |
 | `kit/termux-boot.apk` | 开机自启 | 自启按钮 404 |

@@ -1,7 +1,7 @@
 {
   "name": "dsh-pad-kit",
   "version": "1.0.0",
-  "description": "Run DeepSeek Harness (DSH) locally on an Android tablet via Termux: LAN installer page, remote setup over SSH, and a fixed web entry. Adds 17 tablet_* tools to DSH.",
+  "description": "Run DeepSeek Harness (DSH) on an Android tablet via Termux: LAN installer page, idempotent remote setup over SSH, status and URL checks, and Termux:Boot autostart. Adds 7 tablet_* tools to DSH.",
   "keywords": [
     "dsh",
     "deepseek-harness",

@@ -96,7 +96,7 @@ if ($text -match '(?m)^\s*-\s*id:\s*pad-kit\s*$') {
 
 Write-Host ''
 Write-Host '完成。还有两步是必须人工做的：' -ForegroundColor Green
-Write-Host '  1) 重启 DSH（新增插件行不会热加载），重启后工具列表里会出现 17 个 tablet_* 工具'
+Write-Host '  1) 重启 DSH（新增插件行不会热加载），重启后工具列表里会出现 7 个 tablet_* 工具'
 Write-Host '  2) 首次装平板时，防火墙要放行一次 8090（会弹窗，选「允许」）'
 Write-Host ''
 Write-Host '下一步：在 DSH 里调用 tablet_install_page，按返回的地址在平板上操作。'
