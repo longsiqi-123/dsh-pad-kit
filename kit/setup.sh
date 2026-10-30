@@ -106,6 +106,58 @@ mkdir -p "$HOME_DIR/dshpad"
 log "6/6 启动 DSH 与固定入口"
 bash "$HOME_DIR/start-dsh.sh"
 
+# ---------------------------------------------------------------------------
+# 附加：Termux:Boot（开机自启的注册方，装完必须打开一次才生效）
+# ---------------------------------------------------------------------------
+# 开机自启脚本（Termux:Boot 的入口；bootstrap 里也会写，这里保证「远程修」也能补上）
+BOOT_DIR="$HOME/.termux/boot"
+BOOT_SH="$BOOT_DIR/start-dsh.sh"
+mkdir -p "$BOOT_DIR"
+cat > "$BOOT_SH.new" <<'BOOTEOF'
+#!/data/data/com.termux/files/usr/bin/bash
+export HOME=/data/data/com.termux/files/home
+export PREFIX=/data/data/com.termux/files/usr
+export PATH=$PREFIX/bin:$PATH
+{
+  echo "=== boot $(date '+%Y-%m-%d %H:%M:%S') ==="
+  command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock
+  sleep 8
+  [ -x "$HOME/start-dsh.sh" ] && bash "$HOME/start-dsh.sh" || echo "missing $HOME/start-dsh.sh"
+} >> "$HOME/dsh-boot.log" 2>&1
+BOOTEOF
+chmod +x "$BOOT_SH.new"
+if [ -f "$BOOT_SH" ] && command -v cmp >/dev/null 2>&1 && cmp -s "$BOOT_SH" "$BOOT_SH.new"; then
+  rm -f "$BOOT_SH.new"
+  log "开机脚本已是最新：$BOOT_SH"
+else
+  mv -f "$BOOT_SH.new" "$BOOT_SH"
+  log "开机脚本已写入：$BOOT_SH"
+fi
+
+log "附加：检查 Termux:Boot"
+BOOT_MARK=""
+PM_BIN=/system/bin/pm
+[ -x "$PM_BIN" ] || PM_BIN=pm
+if $PM_BIN list packages 2>/dev/null | grep -q 'com\.termux\.boot'; then
+  BOOT_MARK="已安装（重启平板后 DSH 会自动起来）"
+else
+  BOOT_APK=""
+  for candidate in "/sdcard/Download/termux-boot.apk" \
+                   "$HOME/storage/downloads/termux-boot.apk" \
+                   "/storage/emulated/0/Download/termux-boot.apk"; do
+    if [ -f "$candidate" ]; then BOOT_APK="$candidate"; break; fi
+  done
+  if [ -z "$BOOT_APK" ]; then
+    BOOT_MARK="未安装，也没找到 termux-boot.apk（先去安装页点「下载 Termux:Boot APK」；读不到 /sdcard 时先 termux-setup-storage 再重跑）"
+  elif command -v termux-open >/dev/null 2>&1; then
+    termux-open --content-type application/vnd.android.package-archive "$BOOT_APK" >/dev/null 2>&1
+    BOOT_MARK="已请求拉起安装界面（$BOOT_APK）。没弹出就是被 Android 拦了后台启动：把 Termux 切到前台重跑本脚本，或用文件管理器点开这个 APK 手动装；装完务必点一次「打开」"
+  else
+    BOOT_MARK="缺 termux-open，跳过自动拉起：$BOOT_APK"
+  fi
+fi
+log "Termux:Boot：$BOOT_MARK"
+
 FIXED="http://127.0.0.1:3081/"
 TOKEN_URL="$(cat "$HOME_DIR/dshpad/url.txt" 2>/dev/null)"
 cat <<EOF
@@ -115,6 +167,7 @@ cat <<EOF
 ------------------------------------------------------------
  固定网址（以后只记这个，重启后仍可用）：$FIXED
  当前 token 直连：${TOKEN_URL:-（未取到，见 ~/dshpad/web.log）}
+ Termux:Boot：$BOOT_MARK
 
  在平板浏览器打开后：
    菜单 → 添加到主屏幕，以后一点就进
