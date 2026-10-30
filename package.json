@@ -1,0 +1,45 @@
+{
+  "name": "dsh-pad-kit",
+  "version": "1.0.0",
+  "description": "Run DeepSeek Harness (DSH) locally on an Android tablet via Termux: LAN installer page, remote setup over SSH, and a fixed web entry. Adds 17 tablet_* tools to DSH.",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "android",
+    "termux",
+    "tablet",
+    "plugin"
+  ],
+  "license": "MIT",
+  "author": "LongSiQi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/longsiqi-123/dsh-pad-kit.git"
+  },
+  "homepage": "https://github.com/longsiqi-123/dsh-pad-kit#readme",
+  "bugs": {
+    "url": "https://github.com/longsiqi-123/dsh-pad-kit/issues"
+  },
+  "type": "module",
+  "main": "./lib/plugin.js",
+  "exports": {
+    ".": "./lib/plugin.js"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "lib",
+    "kit",
+    "cordis.patch.yml",
+    "dsh-android-kit.tgz",
+    "install-windows.ps1",
+    "install-unix.sh",
+    "README.md",
+    "AGENT-INSTALL.md",
+    "使用说明.md",
+    "LICENSE"
+  ]
+}

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+dsh-*.log
+.DS_Store
+Thumbs.db
+.selftest-state/
+selftest-output/
+*.bak
+*.bak-*

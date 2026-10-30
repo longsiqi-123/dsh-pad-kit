@@ -1,0 +1,102 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# DSH 平板端引导：自动判断环境（有没有 Termux、curl 好不好、ssh 有没有）再决定怎么走
+set -u
+BASE="__BASE__"
+PUBKEY="__PUBKEY__"
+step() { printf '\n[dsh-kit] %s\n' "$*"; }
+die()  { printf '\n[dsh-kit] 失败：%s\n' "$*"; exit 1; }
+
+# ---------- 0. 环境判断：这里如果不是 Termux，直接给出结论 ----------
+step "0/5 环境检查"
+if [ -z "${PREFIX:-}" ] || [ ! -d "/data/data/com.termux" ]; then
+  die "这里不是 Termux 环境。请先在平板装 Termux（安装页上有 APK），再在 Termux 里运行这一行。"
+fi
+command -v pkg >/dev/null 2>&1 || die "找不到 pkg 命令：Termux 版本过旧（Play 商店版）。请卸载后装 F-Droid/GitHub 版 0.118+。"
+ARCH="$(uname -m)"
+case "$ARCH" in
+  aarch64|arm64) ;;
+  *) die "只支持 arm64 平板，当前架构是 $ARCH。" ;;
+esac
+SDK="$(getprop ro.build.version.sdk 2>/dev/null || echo 0)"
+case "$SDK" in ''|*[!0-9]*) SDK=0 ;; esac
+[ "$SDK" -ge 24 ] || die "需要 Android 7.0 及以上（当前 SDK=$SDK）。"
+FREE_MB="$(df -k /data 2>/dev/null | awk 'NR==2{print int($4/1024)}')"
+case "$FREE_MB" in ''|*[!0-9]*) FREE_MB=0 ;; esac
+[ "$FREE_MB" -ge 1500 ] || die "空间不足：/data 只剩 ${FREE_MB}MB，至少要 1.5GB。"
+echo "  Termux=$PREFIX"
+echo "  架构=$ARCH  Android SDK=$SDK  剩余空间=${FREE_MB}MB"
+
+# ---------- 1. 先保证 curl 可用，否则后面什么都下不了 ----------
+step "1/5 检查 curl 与网络"
+if ! curl --version >/dev/null 2>&1; then
+  echo "  curl 不可用（常见：libssl 符号缺失），先整体升级一版"
+  apt update >/dev/null 2>&1 || true
+  apt full-upgrade -y -o Dpkg::Options::="--force-confnew" >/dev/null 2>&1 || true
+  curl --version >/dev/null 2>&1 || die "curl 仍然不可用。请手动执行：apt update && apt full-upgrade -y 之后重跑这一行。"
+  echo "  curl 已修复：$(curl --version | head -n1)"
+fi
+if ! curl -fsS -m 8 "$BASE/healthz" >/dev/null 2>&1; then
+  die "连不上电脑 $BASE。三条常见原因：①两台设备不在同一 Wi-Fi ②路由器开了 AP 隔离/访客网络 ③电脑防火墙拦了 8090。"
+fi
+echo "  已连通电脑：$BASE"
+
+# ---------- 2. 装 openssh（缺包时换官方源重试） ----------
+step "2/5 安装 openssh"
+if ! command -v sshd >/dev/null 2>&1; then
+  pkg install -y openssh >/dev/null 2>&1 || true
+fi
+if ! command -v sshd >/dev/null 2>&1; then
+  echo "  默认源里没有 openssh，切到官方源重试"
+  echo "deb https://packages.termux.dev/apt/termux-main stable main" > "$PREFIX/etc/apt/sources.list"
+  apt update >/dev/null 2>&1 || true
+  apt install -y openssh >/dev/null 2>&1 || true
+fi
+command -v sshd >/dev/null 2>&1 || die "openssh 装不上。手动执行：pkg install openssh"
+echo "  sshd=$(command -v sshd)"
+
+# ---------- 3. 公钥 + 起服务 ----------
+step "3/5 配置 SSH 免密登录"
+mkdir -p "$HOME/.ssh"; chmod 700 "$HOME/.ssh"
+touch "$HOME/.ssh/authorized_keys"; chmod 600 "$HOME/.ssh/authorized_keys"
+grep -qF "${PUBKEY%% *}" "$HOME/.ssh/authorized_keys" 2>/dev/null || echo "$PUBKEY" >> "$HOME/.ssh/authorized_keys"
+[ -f "$PREFIX/etc/ssh/ssh_host_ed25519_key" ] || ssh-keygen -A >/dev/null 2>&1
+pkill sshd 2>/dev/null; sleep 1
+nohup sshd >/dev/null 2>&1
+sleep 1
+if pgrep sshd >/dev/null 2>&1; then echo "  sshd 已启动（8022）"; else echo "  ! sshd 没起来，电脑端可能连不上"; fi
+
+# ---------- 4. 报到：电脑据此自动登记这台平板 ----------
+step "4/5 向电脑报到"
+USER_NAME="$(whoami)"
+if curl -fsS "$BASE/register?user=$USER_NAME&port=8022" >/dev/null 2>&1; then
+  echo "  已报到：$USER_NAME @ 8022"
+else
+  echo "  报到失败（不影响平板本地使用，只是电脑端暂时不能远程操作这台平板）"
+fi
+
+# ---------- 开机自启脚本（由 Termux:Boot 触发，装不装 Boot 应用都能先放好） ----------
+mkdir -p "$HOME/.termux/boot"
+cat > "$HOME/.termux/boot/start-dsh.sh" <<BOOTEOF
+#!/data/data/com.termux/files/usr/bin/bash
+export HOME=/data/data/com.termux/files/home
+export PREFIX=/data/data/com.termux/files/usr
+export PATH=\$PREFIX/bin:\$PATH
+{
+  echo "=== boot \$(date '+%Y-%m-%d %H:%M:%S') ==="
+  command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock
+  sleep 8
+  [ -x "\$HOME/start-dsh.sh" ] && bash "\$HOME/start-dsh.sh" || echo "missing \$HOME/start-dsh.sh"
+} >> "\$HOME/dsh-boot.log" 2>&1
+BOOTEOF
+chmod +x "$HOME/.termux/boot/start-dsh.sh"
+echo "  开机脚本已放好：~/.termux/boot/start-dsh.sh（装了 Termux:Boot 才会自动执行）"
+
+__SKIP_DSH__
+
+# ---------- 5. 装 DSH 本体 ----------
+step "5/5 安装 DSH 本体（node → dsh → 原生绑定 → 两个安卓补丁 → 起服务）"
+cd "$HOME" || die "无法进入 HOME 目录"
+curl -fL -o dsh-android-kit.tgz "$BASE/kit.tgz" || die "下载套件失败，检查网络后重跑"
+rm -rf "$HOME/dsh-android-kit"
+tar -xzf dsh-android-kit.tgz -C "$HOME" || die "解压失败"
+bash "$HOME/dsh-android-kit/setup.sh"

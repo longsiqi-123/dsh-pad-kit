@@ -1,0 +1,9 @@
+# pad-kit：在安卓平板上本地跑 DSH；电脑侧只负责安装与远程运维
+# 挂在 profile 的 cordis.patch.yml 里即可；这里的 config 只留必要项，目标平板自动从报到的 tablets.json 解析
+- insert:
+    - id: pad-kit
+      name: '@local/dsh-pad-kit'
+      config:
+        httpPort: 8090
+        apkName: termux.apk
+        timeoutMs: 120000
