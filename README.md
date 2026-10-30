@@ -110,87 +110,10 @@ DSH 官方没有 Android 版，唯一能在平板本地跑的是 CLI + Web GUI�
 | 平板打不开 8090 | 不在同一 Wi-Fi；路由器开了 AP 隔离/访客网络；电脑防火墙拦了 8090 |
 | 能开安装页但没报到 | 平板没跑那行 curl；或平板走的是蜂窝流量（与电脑不同网段） |
 | 报到了但 ssh 连不上 | Termux 被系统冻结（切前台 / `termux-wake-lock`）；或平板 DHCP 换了 IP |
-## 六、安装：电脑端（五种方式）
 
-### 方式 A：DSH「添加插件」（推荐，最简单）
+## 六、平板端：安装与开机自启
 
-DSH 界面里 **插件 → 添加插件**，填下面任意一种，点「安装」，再点「立即启用」：
-
-```
-dsh-pad-kit                                    # npm 包
-github:longsiqi-123/dsh-pad-kit                # GitHub 仓库
-https://github.com/longsiqi-123/dsh-pad-kit    # GitHub 完整地址
-D:\某个目录\dsh-pad-kit.zip                     # 本地压缩包
-D:\某个目录\dsh-pad-kit                         # 本地目录（解压后）
-```
-
-DSH 会用 `pluginManager.inspect` 先读一遍包（包名、简介、版本、有没有组合包 patch），再交给 pnpm 装进 profile。
-这条路不需要提前建 junction、不需要手改 `package.json` 和 `cordis.patch.yml` —— 添加插件时 DSH 自己写。
-
-装完**重启一次 DSH**，`tablet_*` 工具出现。
-
-### 方式 B：一行命令
-
-电脑上先把安装页开起来（`tablet_install_page`，或 `node installer-page.js`），然后在 **PowerShell** 里跑：
-
-```powershell
-irm http://<电脑IP>:8090/install.ps1 | iex
-```
-
-它会自己下载 `plugin.zip`（约 33 MB）→ 解压到临时目录 → 执行 `install-windows.ps1`，也就是下面方式 A 的全部步骤。跑完重启一次 DSH。
-
-> 这条路和方式 A 的区别：方式 A 是 DSH 自己的「添加插件」把包装进 profile（会写 `package.json` 与激活行）；
-> 方式 B 是让你在浏览器里点一下就把插件装好，适合手边没有 DSH 界面、或想装完直接看到「重启提示」的场景。
-
-### 方式 C：丢给别人的 DSH，让它自己装
-
-对方已经有电脑版 DSH、只是没有平板时，最省事的做法是：
-
-1. 把这个压缩包发给他（微信 / 网盘 / 局域网都行）
-2. 他在 DSH 对话里把压缩包拖进去，说一句：`把附件这个 dsh-pad-kit.zip 装成 DSH 插件，装完告诉我怎么重启`
-3. 他的 agent 会照 `AGENT-INSTALL.md`（本包自带）执行：解压 → 复制 → 建 junction → 登记依赖 → 写激活行 → 校验 → 提示重启
-4. 重启 DSH，`tablet_*` 工具出现
-
-对方只需要**点一次提权允许**（写 `%USERPROFILE%\.dsh` 属于工作区外）+ **重启一次 DSH**。
-
-### 方式 D：一键脚本
-
-把压缩包解压，在解压出来的目录里执行：
-
-```powershell
-# Windows
-powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
-```
-
-```bash
-# macOS / Linux
-bash install-unix.sh
-```
-
-脚本做四件事（幂等，重复跑只补齐）：复制插件到 `~/.dsh/plugins/dsh-pad-kit`、建 junction/软链、在 `profiles/web/package.json` 登记 `link:` 依赖、在 `profiles/web/cordis.patch.yml` 追加激活行。会先备份 `package.json` 和 `cordis.patch.yml`。
-
-### 方式 E：手工
-
-1. 复制整个目录到 `%USERPROFILE%\.dsh\plugins\dsh-pad-kit\`
-2. 建链接（让 Node 能按包名解析）：
-   - Windows：`mklink /J "%USERPROFILE%\.dsh\profiles\web\node_modules\@local\dsh-pad-kit" "%USERPROFILE%\.dsh\plugins\dsh-pad-kit"`
-   - macOS/Linux：`ln -s ~/.dsh/plugins/dsh-pad-kit ~/.dsh/profiles/web/node_modules/@local/dsh-pad-kit`
-3. `profiles/web/package.json` 的 `dependencies` 加：`"@local/dsh-pad-kit": "link:<插件的绝对路径>"`
-4. `profiles/web/cordis.patch.yml` 末尾加：
-
-```yaml
-- insert:
-    - id: pad-kit
-      name: '@local/dsh-pad-kit'
-      config:
-        httpPort: 8090
-        apkName: termux.apk
-        timeoutMs: 120000
-```
-
-5. **重启 DSH**
-
-### 平板端：安装页会自动分岔
+### 安装页会自动分岔
 
 打开 `http://<电脑IP>:8090/`，页面第一屏就问「平板有没有 Termux」：
 
